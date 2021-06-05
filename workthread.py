@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from threading import Thread, enumerate, RLock
-from ccon import ClientSession
+from clientsession import ClientSession
 import socket, traceback
 import sys, select
 #import yaml

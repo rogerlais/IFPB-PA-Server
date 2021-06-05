@@ -2,21 +2,27 @@
 
 from threading import enumerate, RLock
 from base64 import b64encode, b64decode
-import socket, traceback
+import socket
+import traceback
 from io import StringIO
-import sys, os, select
+import sys
+import os
+import select
 import logging
+from getargs import GetArgs
+
+import os
+import inspect
+
+import sys
+import common.constants as CONSTANTS
+
 
 ThreadLock = RLock()
 
-#!from getargs import GetArgs
-GetArgs = None
 
-
-
-#class ccon(GetArgs):
-class ClientSession():
-    def __init__(self, conn, ip, port, active_threads, max_buffer_size = 8192):
+class ClientSession(GetArgs):
+    def __init__(self, conn, ip, port, active_threads, max_buffer_size=8192):
         self.conn = conn
         self.ip = ip
         self.port = port
@@ -32,7 +38,7 @@ class ClientSession():
         self.active_threads['connections'][self.port]['state'] = 1
         self.set_lock(False)
 
-        #GetArgs.__init__(self)
+        GetArgs.__init__(self)
         self.run()
 
     def set_lock(self, lock=False):
@@ -45,9 +51,7 @@ class ClientSession():
             ThreadLock.release()
 
     def die(self, *args):
-        '''Fata error handling function for
-        issuing none, one or many warnings before exiting
-        '''
+        '''Fatal error handling function for issuing none, one or many warnings before exiting'''
         for msg in args:
             logging.error(msg)
         self.stop_socket(True)
@@ -57,7 +61,7 @@ class ClientSession():
 
     def stop_socket(self, stop=False):
         if stop and self.running_state:
-            logging.info("(%s) Service has been marked for shutdown" % self.service_name)
+            logging.info("(%s) Serviço assinalado para encerramento" % self.service_name)
             self.socket_state(False)
 
         self.report()
@@ -69,18 +73,17 @@ class ClientSession():
     def report(self):
         if self.running_state:
             print(
-                "INFO: (%s) Service is running:" % self.service_name,
-                "\tPort: %s" % self.port,
-                "\tBind Address: %s" % self.host)
+                "INFO: (%s) Serviço está rodando:" % self.service_name, "\tPorta: %s" % self.port,
+                "\tNo endereço: %s" % self.host)
         elif not self.running_state and not self.socket_has_exited:
-            logging.info("(%s) Services has recieved stop signal. Will exit when all tasks are done." % self.service_name)
-            logging.info("(%s) Waiting for client to disconnect." % self.service_name)
+            logging.info("(%s) Serviço recebeu sinal de parada. Finalizando quando tarefas pendentes encerradas." % self.service_name)
+            logging.info("(%s) Aguardando por cliente desconectar." % self.service_name)
         else:
-            logging.info("(%s) Service has stopped" % self.service_name)
+            logging.info("(%s) Serviço parou" % self.service_name)
 
     def com_drop(self):
-        logging.error("(%s) Issuing drop transmission now (009x0DT000x0)" % self.service_name)
-        self.conn.sendall(b64encode('009x0DT000x0'.encode('utf-8')))
+        logging.error("(%s) Enviando transmissão de encerramento agora (%s)" % (self.service_name, CONSTANTS.BYE))
+        self.conn.sendall(b64encode(CONSTANTS.BYE.encode(CONSTANTS.CHAR_SET)))
         self.conn.setblocking(False)
         self.com_drop_status = True
         while True:
@@ -99,12 +102,12 @@ class ClientSession():
         self.conn.setblocking(True)
 
     def com_sync(self, syncType):
-        logging.debug("(%s) Sending %s " % (self.service_name, syncType))
-        prem = syncType.encode('utf-8')
+        logging.debug("(%s) Enviando %s " % (self.service_name, syncType))
+        prem = syncType.encode(CONSTANTS.CHAR_SET)
         msg = b64encode(prem)
         self.conn.sendall(msg)
         self.cldata = self.read_socket()
-        logging.debug("(%s) Recieved %s" % (self.service_name, self.cldata))
+        logging.debug("(%s) Recebido %s" % (self.service_name, self.cldata))
         if self.cldata == syncType:
             return True
         else:
@@ -112,12 +115,12 @@ class ClientSession():
             return False
 
     def message_com(self, message, buffer=8192):
-        logging.debug("(%s) Start of message" % self.service_name)
-        if not self.com_sync('01xSOM01x'):
+        logging.debug("(%s) Início da mensagem" % self.service_name)
+        if not self.com_sync(CONSTANTS.HEADER):
             return False
 
         logging.debug("(%s) Sending data: %s" % (self.service_name, message))
-        self.conn.sendall(b64encode(message.encode('utf-8')))
+        self.conn.sendall(b64encode(message.encode(CONSTANTS.CHAR_SET)))
 
         self.cldata = self.read_socket(buffer)
         if self.cldata != '01xROM01x':
@@ -156,15 +159,14 @@ class ClientSession():
         return self.com_sync('00xEOT00x')
 
     def init_sync(self):
-        #if self.com_sync('00xSOS00xHELLOx00'):
-        if self.com_sync('VAGOAMIN-START'):
+        if self.com_sync(CONSTANTS.HELLO):
             logging.debug("(%s) Client synced!" % self.service_name)
         else:
             self.die("(%s) Communication error" % self.service_name)
 
     def decode_data(self, data):
-        ret = b64decode(data).decode('utf-8')
-        return  ret
+        ret = b64decode(data).decode(CONSTANTS.CHAR_SET)
+        return ret
 
     def read_socket(self, buffer=8192):
         data = self.conn.recv(buffer)
@@ -248,18 +250,18 @@ class ClientSession():
                         retdata = {'key': 'dict', 'value': []}
                         for e in os.listdir():
                             retdata['value'].append(e)
-                    elif self.args[arg]  == 'cwd':
+                    elif self.args[arg] == 'cwd':
                         retdata = {'key': 'text', 'value': os.getcwd()}
-                    elif self.args[arg]  == 'pwd':
+                    elif self.args[arg] == 'pwd':
                         retdata = {'key': 'text', 'value': os.path.dirname(os.getcwd())}
 
                 self.init_client_communication(retdata)
             except:
                 self.target_clients_err = sys.exc_info()
-                logging.error("Execution error: %s" % str(self.target_clients_err))
+                logging.error("Erro de execução: %s" % str(self.target_clients_err))
                 retdata = {'key': 'text', 'value': str(self.target_clients_err)}
                 self.init_client_communication(retdata)
 
         self.close_socket()
         self.socket_has_exited = True
-        logging.info("(%s) Service has stopped" % self.service_name)
+        logging.info("(%s) Servi;o parou" % self.service_name)

@@ -1,3 +1,6 @@
+#!/bin/env python3
+
+
 #! refs https://www.sqlitetutorial.net/sqlite-python/
 
 # TODO: Doc to file/class
