@@ -11,13 +11,6 @@
             "program": "${workspaceFolder}/main.py",
             "args": ["-m"],
             "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Arquivo Atual",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal"
         }
     ]
 }

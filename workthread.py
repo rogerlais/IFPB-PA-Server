@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from database import Database
 from threading import Thread, enumerate, RLock
 from clientsession import ClientSession
 import socket, traceback
@@ -24,9 +25,10 @@ active_threads = {
 }
 
 class WorkThread():
-    def __init__(self, port=8421, host="0.0.0.0"):
+    def __init__(self, port=8421, host="0.0.0.0", database = None ):
         self._host = host
         self._port = port
+        self._database = database
         self.ServiceState(True)
 
     def ServiceState(self, state):
@@ -94,6 +96,7 @@ class WorkThread():
                         self.ip,
                         self._port,
                         active_threads,
+                        self._database,
                     ),
                     daemon=False
                 )
@@ -126,12 +129,3 @@ class WorkThread():
         print("Socket server has stopped")
 
 
-#todo remover lixo abaixo
-"""
-if __name__ == "__main__":
-    try:
-        srv = srvprime()
-        srv.run()
-    except KeyboardInterrupt:
-        srv.StopService(True)
-"""

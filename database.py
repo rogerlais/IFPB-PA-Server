@@ -8,7 +8,7 @@
 import sqlite3
 from sqlite3 import Error
 import os
-
+from common.hostrecord import HostRecord
 
 class Database():
 
@@ -89,3 +89,12 @@ class Database():
 
     def readHostStatus(self, hostRec):
         print("Não implementado")
+
+
+    def updateHost( self, h ):
+        cur = self.conn.cursor()
+        cur.execute('SELECT * FROM hosts WHERE hostname="{0}"'.format( h.hostname ))
+        rows = cur.fetchall()
+        if( rows > 0 ):
+            print( 'Registro encontrado para '.format( h.hostname ))
+

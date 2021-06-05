@@ -2,7 +2,7 @@
 
 import os
 import sys
-from server import Server
+from service import  Server
 
 
 def main():
