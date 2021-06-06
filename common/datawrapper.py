@@ -4,10 +4,10 @@ from sys import prefix
 
 class DataWrapper():
 
-    def __init__(self, verb, data, retcode, msg):
+    def __init__(self, verb, json, retcode, msg):
         super().__init__()
         self._verb = verb
-        self._json =  json.dumps( data )  #armazena string
+        self._json =  json  #armazena string
         self._retcode = retcode
         self._msg = msg
 
@@ -20,10 +20,6 @@ class DataWrapper():
         return json.loads( self._json )
 
     @property
-    def json(self):
-        return self._json
-
-    @property
     def retcode(self):
         return self._retcode
 
@@ -34,8 +30,12 @@ class DataWrapper():
     @staticmethod
     def loadFromJSON(jsonStr):
         ret = DataWrapper(None, None, None, None)
-        ret._verb = jsonStr["verb"]
-        ret._json = jsonStr["json"]
-        ret._retcode = jsonStr["retcode"]
-        ret._msg = jsonStr["msg"]
+        ret._verb = jsonStr["_verb"]
+        ret._json = jsonStr["_json"]
+        ret._retcode = jsonStr["_retcode"]
+        ret._msg = jsonStr["_msg"]
         return ret
+
+    @property
+    def asJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__)

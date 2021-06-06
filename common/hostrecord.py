@@ -4,10 +4,11 @@ import common.constants as CONSTANTS
 
 class HostRecord():
 
-    def __init__(self, hostname, MAC, Address, loggedUser ):
+    def __init__(self, hostname, MAC, address, loggedUser ):
         super().__init__()
         self._hostname = hostname
         self._MAC = MAC
+        self._address = address
         self._loggedUser = loggedUser
         self._timestamp =  datetime.datetime.now().timestamp()
         #todo ver demais atributos
@@ -32,6 +33,10 @@ class HostRecord():
         return ret
 
     @property
+    def address( self ):
+        return self._address
+
+    @property
     def hostname( self ):
         return self._hostname
 
@@ -47,7 +52,12 @@ class HostRecord():
     def timestamp( self ):
         return self._timestamp
 
-    def export( self ):
-        meDict = {'hostname': self.hostname, 'MAC': self._MAC, 'loggedUser': self.loggedUser, "timestamp": self.timestamp }
-        ret = json.dumps(meDict)
+    @property
+    def asJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__)
+
+    def dummyAsJSON( self ):
+        ret = json.dumps( self )
+        #meDict = [ { 'hostname': self.hostname, 'MAC': self._MAC, 'loggedUser': self.loggedUser, "timestamp": self.timestamp }]
+        #ret = json.dumps(meDict)
         return ret

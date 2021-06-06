@@ -54,11 +54,18 @@ class Server():
     #showInfo
 
 def clientCallback(client, address, data):
-    print('Dado recebido', data)
     # send a response back to the client
+    print('Dado recebido', data)
     try:
+        #todo lembrar de incorporar IP do cliente nos dados
         hostRequest = DataWrapper.loadFromJSON( data )
-        response = json.loads(hostRequest.json)
-        client.send(response.encode('utf-8'))
+        ret = json.loads(hostRequest.asJSON)
+        ThreadLock.acquire()  #todo caso esta serialização comlique, montar dispatcher não bloqueante
+        try:
+            reponse = parada!
+            ret = response.process()
+        finally:
+            ThreadLock.release()
+        client.send(ret.encode('utf-8'))
     except Exception as e:
         print( e )
