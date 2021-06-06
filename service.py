@@ -1,13 +1,13 @@
 from database import Database
-import os
-import time
 from serverconfig import ServerConfig
 import common.constants as CONSTANTS
-from common.datawrapper import DataWrapper
+from common.datawrapper import DataWrapper, decodeDataWrapper
 from server import ThreadedServer
-from threading import Thread, RLock
+from threading import RLock
+
 
 import json
+import time
 
 ThreadLock = RLock()
 
@@ -42,8 +42,21 @@ class Server():
         self._cfg = ServerConfig()
 
     def mainLoop(self):
-        ThreadedServer( self.config.bindAddress, self.config.port, timeout=86400, callback=clientCallback, debug=True).start()
+        ThreadedServer( self, self.config.bindAddress, self.config.port, timeout=86400, callback=clientCallback, debug=True).start()
     #mainLoop
+
+    def getResponse( self, req ):
+        host = req.host
+        if( req.verb == CONSTANTS.VERB_GET_VERSION ):
+            res = DataWrapper( req.verb, req.asJSON , 0 , CONSTANTS.APP_VERSION )
+        elif( req.verb == CONSTANTS.VERB_BYE ):
+            res = DataWrapper( req.verb, req.asJSON , 0 , CONSTANTS.VERB_BYE )
+        elif( req.verb == CONSTANTS.VERB_UPDATE ):
+            #todo testar a situação do host e enviar o comando de desligamento ao invés de poweron
+            res = DataWrapper( req.verb, req.asJSON , 0 , CONSTANTS.VERB_POWEROFF )
+        else:
+            res = DataWrapper( req.verb, req.asJSON , CONSTANTS.RESP_ERROR , 'Comando não reconhecido pelo protolo' )
+        return res
 
     def showInfo( self ):
         print( "VAGOAMIN: Vara de Goiabeira no Ambientalmente Incorreto.")
@@ -53,19 +66,23 @@ class Server():
         print( "Versão: %s" % CONSTANTS.APP_VERSION)
     #showInfo
 
-def clientCallback(client, address, data):
+def clientCallback(serviceThread, sockClient, address, jsonDict):
     # send a response back to the client
-    print('Dado recebido', data)
+    print('Dado recebido', jsonDict)
     try:
         #todo lembrar de incorporar IP do cliente nos dados
-        hostRequest = DataWrapper.loadFromJSON( data )
-        ret = json.loads(hostRequest.asJSON)
+        dw = decodeDataWrapper( jsonDict )
         ThreadLock.acquire()  #todo caso esta serialização comlique, montar dispatcher não bloqueante
         try:
-            reponse = parada!
-            ret = response.process()
+            dwRes = serviceThread.server.getResponse( dw )
+            res = dwRes.asJSON
+            #ret = response.process()
         finally:
             ThreadLock.release()
-        client.send(ret.encode('utf-8'))
+        sockClient.send(res.encode('utf-8'))
+        if( dwRes.verb == CONSTANTS.VERB_BYE ):
+            time.sleep( 2 )
+            sockClient.close()
     except Exception as e:
+        #todo tratar erro e responder ao cliente o ocorrido
         print( e )

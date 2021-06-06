@@ -8,7 +8,8 @@ from database import Database
 from  common.datawrapper import DataWrapper
 
 class ThreadedServer(Thread):
-    def __init__(self, host, port, timeout=60, callback=None, debug=False):
+    def __init__(self, server, host, port, timeout=60, callback=None, debug=False):
+        self.server = server
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -81,7 +82,7 @@ class ThreadedServer(Thread):
                         print('\n')
 
                     if callback is not None:
-                        callback(client, address, json)
+                        callback(self, client, address, json)
 
                 else:
                     raise 'Client disconnected'
@@ -95,14 +96,13 @@ class ThreadedServer(Thread):
 
 
 #exemplo
-def some_callback(client, address, data):
+def some_callback(server, sockClient, address, data):
     print('Dado recebido', data)
     # send a response back to the client
     try:
         hostRequest = DataWrapper.loadFromJSON( data )
-
         response = loads(hostRequest.json)
-        client.send(response.encode('utf-8'))
+        sockClient.send(response.encode('utf-8'))
     except Exception as e:
         print( e )
 
